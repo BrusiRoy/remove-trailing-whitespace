@@ -1,0 +1,7 @@
+There is some trailing whitespace    
+   There is some trailing whitespace    
+   
+There     is some trailing whitespace    
+
+There is some     trailing whitespace    
+  There is some trailing whitespace    
