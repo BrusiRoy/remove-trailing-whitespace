@@ -4,3 +4,7 @@ version = "0.1.0"
 authors = ["Bruno Roy <brusi_roy@hotmail.com>"]
 
 [dependencies]
+docopt = "0.8.1"
+docopt_macros = "0.8.0"
+serde = "1.0"
+serde_derive = "1.0"

@@ -1,9 +1,59 @@
-use std::env;
+#![feature(plugin)]
+#![plugin(docopt_macros)]
+
+#[macro_use]
+extern crate serde_derive;
+extern crate docopt;
+
 use std::fs::File;
 use std::io::prelude::*;
 
+// Docopt usage string
+docopt!(Args derive Debug, "
+rtw.
+
+Usage:
+  ./rtw <source> <dest>
+");
+
+// TODO: - Support multiple files
+//       - Spawn multiple threads (for fun)
+//       - Print information to the screen
+//       - Display usage when invalid args
+//       - Support trailing tabs
+//       - Show numbers of line modified
+
+fn main() {
+  // Read the command line arguments
+  let args: Args = Args::docopt().deserialize().unwrap_or_else(|e| e.exit());
+  println!("{:?}", args);
+
+  let input_file = args.arg_source;
+  let output_file = args.arg_dest;
+
+
+  // Read input file
+  println!("Opening input file '{}'.", input_file);
+  let mut input_file = File::open(input_file)
+    .expect("File not found.");
+
+  let mut content = String::new();
+  input_file.read_to_string(&mut content)
+    .expect("Something went wrong reading the file.");
+
+  // Remove trailing space
+  let output_content = remove_trailing_whitespace(&content);
+
+  // Write to ouput file
+  println!("Writing result to file '{}'.", output_file);
+  let mut output_file = File::create(output_file)
+    .expect("Unable to create output file.");
+  output_file.write_all(output_content.as_bytes())
+    .expect("Something went wrong while writing output file.");
+}
+
 // Remove trailing whitespace
-fn remove_trailing_whitespace(str: String) -> String {
+fn remove_trailing_whitespace(str: &String) -> String {
   let mut return_str = String::new();
   let mut last_char_index = 0;
   let mut start_line_index = 0;
@@ -31,36 +81,3 @@ fn remove_trailing_whitespace(str: String) -> String {
   return_str
 }
 
-// TODO: - Support multiple files
-//       - Spawn multiple threads (for fun)
-//       - Print information to the screen
-//       - Display usage when invalid args
-//       - Support trailing tabs
-fn main() {
-  // Read the command line arguments
-  let args: Vec<String> = env::args().collect();
-  if args.len() != 3 {
-    panic!("Invalid number of arguments");
-
-  }
-
-  let input_file  = &args[1];
-  let output_file = &args[2];
-
-  // Read input file
-  let mut input_file = File::open(input_file)
-    .expect("File not found.");
-
-  let mut content = String::new();
-  input_file.read_to_string(&mut content)
-    .expect("Something went wrong reading the file.");
-
-  // Remove trailing space
-  let output_content = remove_trailing_whitespace(content);
-
-  // Write to ouput file
-  let mut output_file = File::create(output_file)
-    .expect("Unable to create output file.");
-  output_file.write_all(output_content.as_bytes())
-    .expect("Something went wrong while writing output file.");
-}
