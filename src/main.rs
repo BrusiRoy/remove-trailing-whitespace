@@ -8,51 +8,72 @@ extern crate docopt;
 use std::fs::File;
 use std::io::prelude::*;
 
+// TODO: - Support multiple files
+//       - Spawn multiple threads (for fun)
+//       - Support trailing tabs
+//       - Show numbers of line modified
+//       - Support both Windows and Linux
+
+
 // Docopt usage string
 docopt!(Args derive Debug, "
 rtw.
 
 Usage:
-  ./rtw <source> <dest>
-");
+  ./rtw <input> <output>
+  ./rtw (-i | --in-place) <file>...
+  ./rtw (-d | --directory) <dir>...
 
-// TODO: - Support multiple files
-//       - Spawn multiple threads (for fun)
-//       - Print information to the screen
-//       - Display usage when invalid args
-//       - Support trailing tabs
-//       - Show numbers of line modified
+Options:
+  -i --in-place   Modifying the files in-place.
+  -d --directory  Modifying all the files within a directory (in-place).
+");
 
 fn main() {
   // Read the command line arguments
   let args: Args = Args::docopt().deserialize().unwrap_or_else(|e| e.exit());
   println!("{:?}", args);
 
-  let input_file = args.arg_source;
-  let output_file = args.arg_dest;
+  if args.flag_in_place {
+    for file in args.arg_file {
+      let input_content = extract_string_content(&file[..]);
+      let output_content = remove_trailing_whitespace(&input_content);
+      std::fs::remove_file(&file)
+        .expect("Unable to apply in-place.");
+      write_to_file(&file[..], &output_content[..]);
+    }
+  } else if args.flag_directory {
+    // TODO: Find all the files within a directory
+  } else {
+    let input_content = extract_string_content(&args.arg_input[..]);
+    let output_content = remove_trailing_whitespace(&input_content);
+    write_to_file(&args.arg_output[..], &output_content[..]);
+  }
+}
 
-
-  // Read input file
-  println!("Opening input file '{}'.", input_file);
-  let mut input_file = File::open(input_file)
+/// Returns a String representing the content of input file `file_name`
+fn extract_string_content(file_name: &str) -> String {
+  println!("Opening input file '{}'.", file_name);
+  let mut input_file = File::open(file_name)
     .expect("File not found.");
 
   let mut content = String::new();
   input_file.read_to_string(&mut content)
     .expect("Something went wrong reading the file.");
 
-  // Remove trailing space
-  let output_content = remove_trailing_whitespace(&content);
+  content
+}
 
-  // Write to ouput file
-  println!("Writing result to file '{}'.", output_file);
-  let mut output_file = File::create(output_file)
+/// Writes `content` to `file_name`
+fn write_to_file(file_name: &str, content: &str) {
+  println!("Writing result to file '{}'.", file_name);
+  let mut output_file = File::create(file_name)
     .expect("Unable to create output file.");
-  output_file.write_all(output_content.as_bytes())
+  output_file.write_all(content.as_bytes())
     .expect("Something went wrong while writing output file.");
 }
 
-// Remove trailing whitespace
+/// Returns a String with the same content of `str` but with no trailing whitespace
 fn remove_trailing_whitespace(str: &String) -> String {
   let mut return_str = String::new();
   let mut last_char_index = 0;
