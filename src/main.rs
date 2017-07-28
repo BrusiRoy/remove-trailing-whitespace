@@ -13,6 +13,8 @@ use std::io::prelude::*;
 //       - Support trailing tabs
 //       - Show numbers of line modified
 //       - Support both Windows and Linux
+//       - Use regex
+//       - Look into mmap()
 
 
 // Docopt usage string
@@ -20,7 +22,6 @@ docopt!(Args derive Debug, "
 rtw.
 
 Usage:
-  ./rtw <input> <output>
   ./rtw (-i | --in-place) <file>...
   ./rtw (-d | --directory) <dir>...
 
@@ -36,18 +37,24 @@ fn main() {
 
     if args.flag_in_place {
         for file in args.arg_file {
-            let input_content = extract_string_content(&file[..]);
-            let output_content = remove_trailing_whitespace(&input_content);
-            std::fs::remove_file(&file).expect("Unable to apply in-place.");
-            write_to_file(&file[..], &output_content[..]);
+            remove_trailing_whitespace_in_place(&file[..]);
         }
     } else if args.flag_directory {
         // TODO: Find all the files within a directory
-    } else {
-        let input_content = extract_string_content(&args.arg_input[..]);
-        let output_content = remove_trailing_whitespace(&input_content);
-        write_to_file(&args.arg_output[..], &output_content[..]);
+        for dir in args.arg_file {
+            let paths = std::fs::read_dir(dir).unwrap(); // Maybe not use unwrap
+            for path in paths {
+                remove_trailing_whitespace_in_place(path.unwrap().path().to_str().unwrap());
+            }
+        }
     }
+}
+
+fn remove_trailing_whitespace_in_place(file: &str) {
+    let input_content = extract_string_content(&file[..]);
+    let output_content = remove_trailing_whitespace(&input_content);
+    std::fs::remove_file(&file).expect("Unable to apply in-place.");
+    write_to_file(&file[..], &output_content[..]);
 }
 
 /// Returns a String representing the content of input file `file_name`
